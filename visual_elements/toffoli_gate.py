@@ -1,7 +1,7 @@
-from tkinter import *
+from tkinter import Frame
 
 
-class ToffoliGate(Frame):
+class ToffoliGateVisual(Frame):
 	def __init__(self, canvas, n_controls, name, x=25, y=25, c=10, up=True):
 		# n_controls - число управляющих линий
 		self.n_controls = n_controls

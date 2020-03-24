@@ -1,8 +1,8 @@
-from tkinter import *
-from .toffoli_gate import ToffoliGate
-
+from tkinter import Frame, Canvas, Button
+from .toffoli_gate import ToffoliGateVisual
 
 c = 10  # constant for gate size
+
 
 class mainFrame(Frame):
 	def __init__(self, parent, width=400, height=400, lines_num=3):
@@ -25,7 +25,7 @@ class mainFrame(Frame):
 		self.lines_ys = self.add_lines(lines_num)
 
 	def addToffoliGate(self, n_controls, name="TofGate", x=25, y=25, up=True):
-		self.gates.append(ToffoliGate(self.canvas, n_controls, name, x, y, up=up))
+		self.gates.append(ToffoliGateVisual(self.canvas, n_controls, name, x, y, up=up))
 
 	def mouse_press(self, event):
 		self.set_nearest_gate(event)
@@ -65,7 +65,7 @@ class mainFrame(Frame):
 				(not self.nearest_gate.up)
 			)
 			self.canvas.delete(self.nearest_gate.name_tag)
-			self.gates[self.nearest_gate_index] = ToffoliGate(
+			self.gates[self.nearest_gate_index] = ToffoliGateVisual(
 				self.canvas,
 				n_controls=params[0],
 				name=params[1],
@@ -123,15 +123,6 @@ class mainFrame(Frame):
 		self.add0_button.pack()
 		self.add1_button.pack()
 		self.add2_button.pack()
-
-	def add(self):
-		self.addToffoliGate(0, name="TofGate" + str(len(self.gates) + 1))
-	
-	def add1(self):
-		self.addToffoliGate(1, name="TofGate" + str(len(self.gates) + 1))
-
-	def add2(self):
-		self.addToffoliGate(2, name="TofGate" + str(len(self.gates) + 1))
 
 	@property
 	def nearest_gate(self):
