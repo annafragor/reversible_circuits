@@ -7,7 +7,9 @@ c = 10  # constant for gate size
 class mainFrame(Frame):
 	def __init__(self, parent, width=400, height=400, lines_num=3):
 		Frame.__init__(self, parent)
+		self.parent = parent
 		parent.geometry('%dx%d+%d+%d' % (800, 500, 400, 600))
+		self.create_buttons(self.parent)
 
 		self.canvas = Canvas(width=width, height=height, background="white")
 		self.canvas.pack(expand=True)
@@ -91,7 +93,7 @@ class mainFrame(Frame):
 			delta_if_down -= self.lines_ys[i]
 
 			if (self.nearest_gate.up and abs(delta_if_up) <= self.nearest_gate.c) or (not self.nearest_gate.up and abs(delta_if_down) <= self.nearest_gate.c):
-				return self.lines_ys[i] if self.nearest_gate.up else self.lines_ys[i + 1]
+				return self.lines_ys[i] if self.nearest_gate.up else self.lines_ys[i + self.nearest_gate.n_controls]
 		return None
 
 	def add_lines(self, n_lines):
@@ -104,6 +106,32 @@ class mainFrame(Frame):
 			)
 			ys.append(y)
 		return ys
+
+	def create_buttons(self, parent):
+		self.add0_button = Button(
+			parent, text="add0", fg="black",
+			command=lambda: self.addToffoliGate(0, name="TofGate0-" + str(len(self.gates) + 1))
+		)
+		self.add1_button = Button(
+			parent, text="add1", fg="black",
+			command=lambda: self.addToffoliGate(1, name="TofGate1-" + str(len(self.gates) + 1))
+		)
+		self.add2_button = Button(
+			parent, text="add2", fg="black",
+			command=lambda: self.addToffoliGate(2, name="TofGate2-" + str(len(self.gates) + 1))
+		)
+		self.add0_button.pack()
+		self.add1_button.pack()
+		self.add2_button.pack()
+
+	def add(self):
+		self.addToffoliGate(0, name="TofGate" + str(len(self.gates) + 1))
+	
+	def add1(self):
+		self.addToffoliGate(1, name="TofGate" + str(len(self.gates) + 1))
+
+	def add2(self):
+		self.addToffoliGate(2, name="TofGate" + str(len(self.gates) + 1))
 
 	@property
 	def nearest_gate(self):
