@@ -1,5 +1,7 @@
 from tkinter import Frame, Canvas, Button
 from .toffoli_gate import ToffoliGateVisual
+from maths.circuit import Circuit
+from maths.transposition import Transposition
 
 c = 10  # constant for gate size
 
@@ -10,19 +12,23 @@ class mainFrame(Frame):
 		self.parent = parent
 		parent.geometry('%dx%d+%d+%d' % (800, 500, 400, 600))
 		self.create_buttons(self.parent)
+		self._set_up_canvas(width, height)	
+		
+		self.gates = []
+		self.gates_indexes_on_lines = []
+		self.nearest_gate_index = None
+		self.current_mouse_position = None
+		self.lines_ys = self.add_lines(lines_num)
 
+		self.circuit = None
+
+	def _set_up_canvas(self, width, height):
 		self.canvas = Canvas(width=width, height=height, background="white")
 		self.canvas.pack(expand=True)
 		self.canvas.bind("<ButtonPress-1>", self.mouse_press)
 		self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 		self.canvas.bind("<B1-Motion>", self.drag_process)
 		self.canvas.bind("<Button-2>", self.rotate_gate)  # клик колёсиком мыши
-		
-		self.gates = []
-		self.nearest_gate_index = None
-		self.current_mouse_position = None
-
-		self.lines_ys = self.add_lines(lines_num)
 
 	def addToffoliGate(self, n_controls, name="TofGate", x=25, y=25, up=True):
 		self.gates.append(ToffoliGateVisual(self.canvas, n_controls, name, x, y, up=up))
@@ -36,15 +42,26 @@ class mainFrame(Frame):
 		if self.nearest_gate_index != None:
 			nearest_line = self.get_nearest_line(event)
 			if not nearest_line:
+				# отрисовываем элемент там, где отжали кнопку, не добавляя на схему
 				self.nearest_gate.set_central_point(
 					x_delta=event.x - self.current_mouse_position[0], 
 					y_delta=event.y - self.current_mouse_position[1]
 				)
+				# проверка, не был ли этот элемент удалён с самой схемы
+				if self.nearest_gate.on_schema:
+					# если да - удаление из индексов
+					self.gates_indexes_on_lines.remove(self.nearest_gate_index)
+					self.nearest_gate.on_schema = False
 			else:
+				# примагничиваем элемент к проводу
+				# добавляем его в список элементов, которые находятся именно на обратимой схеме (т.е. на проводах)
 				y_delta = nearest_line - self.nearest_gate.center_point[1]
 				self.canvas.move(self.nearest_gate.name_tag, 0, y_delta)
 				self.nearest_gate.set_central_point(x_delta=0, y_delta=y_delta)
-		self.nearest_gate_index = None
+				if not self.nearest_gate.on_schema:  # если элемент не был на схеме (если был - ничего делать не нужно)
+					self.nearest_gate.on_schema = True
+					self.gates_indexes_on_lines.append(self.nearest_gate_index)
+			self.nearest_gate_index = None
 
 	def drag_process(self, event):
 		if self.nearest_gate_index:
@@ -72,7 +89,7 @@ class mainFrame(Frame):
 				x=params[2],
 				y=params[3],
 				up=params[4]
-            )
+            )			
 
 	def set_nearest_gate(self, event):
 		for i in range(len(self.gates)):
@@ -120,9 +137,21 @@ class mainFrame(Frame):
 			parent, text="add2", fg="black",
 			command=lambda: self.addToffoliGate(2, name="TofGate2-" + str(len(self.gates) + 1))
 		)
+		self.calculate_transposition_button = Button(
+			parent, text="calculate transposition", fg="black",
+			command=self.calculate_transposition
+		)
 		self.add0_button.pack()
 		self.add1_button.pack()
 		self.add2_button.pack()
+		self.calculate_transposition_button.pack()
+
+	def calculate_transposition(self):
+		gates = [self.gates[index] for index in self.gates_indexes_on_lines]
+		n = len(self.lines_ys)
+		self.circuit = Circuit(n, visual_gates=gates, y_lines=self.lines_ys)
+		tr = Transposition(n, circuit=self.circuit)
+		tr.print_truth_table()
 
 	@property
 	def nearest_gate(self):

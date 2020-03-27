@@ -4,11 +4,18 @@ class Transposition:
     def __init__(self, n, **kwargs):
         self.n = n
         self._generate_inputs(n)
+        self.gates = []
+        self.outputs = []
         if 'outputs' in kwargs:
             self.outputs = kwargs['outputs']
         elif 'gates' in kwargs:  # gate - объект класса ToffoliGate из модуля circuit
             self.gates = kwargs['gates']
-            self.outputs = []
+            self._calculate_function()
+        elif 'circuit' in kwargs:
+            circuit = kwargs['circuit']
+            for coord in sorted(circuit.gates_dict):
+                gate = circuit.gates_dict[coord]
+                self.gates.append(gate)
             self._calculate_function()
 
     def _generate_inputs(self, n):
@@ -34,5 +41,4 @@ class Transposition:
     def print_truth_table(self):
         for i in range(len(self.inputs_str)):
             print(' '.join(self.inputs_str[i]), '|', ' '.join(self.outputs[i]))
-
-    
+        print()

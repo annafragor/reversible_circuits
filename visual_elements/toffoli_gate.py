@@ -2,13 +2,14 @@ from tkinter import Frame
 
 
 class ToffoliGateVisual(Frame):
-	def __init__(self, canvas, n_controls, name, x=25, y=25, c=10, up=True):
+	def __init__(self, canvas, n_controls, name, x=25, y=25, c=10, up=True, on_schema=False):
 		# n_controls - число управляющих линий
 		self.n_controls = n_controls
 		self.name_tag = name
 		self.center_point = (x, y)
 		self.c = c
 		self.up = up
+		self.on_schema = on_schema
 
 		self.canvas = canvas
 		self._create_gate(x, y)
@@ -49,7 +50,7 @@ class ToffoliGateVisual(Frame):
 					(x + 3, y_dot + 3), 
 					fill="black", tags=(self.name_tag,)
 				)
-			)        
+			)       
 
 	def set_central_point(self, **kwargs):
 		if 'x' in kwargs and 'y' in kwargs:
@@ -60,3 +61,6 @@ class ToffoliGateVisual(Frame):
 				self.center_point[0] + kwargs['x_delta'],
 				self.center_point[1] + kwargs['y_delta']
 			)
+
+	def get_dots_ys(self):
+		return [self.canvas.coords(dot_id)[1] + 3 for dot_id in self.dots_id]
