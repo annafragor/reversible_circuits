@@ -159,7 +159,6 @@ class mainFrame(Frame):
 			command=self.add_gate
 		)
 		self.add_button.pack()
-		self._create_select()
 		
 		for i in range(len(self.lines_ys)):
 			self.selected_control_lines_indexes.append(IntVar())
@@ -190,21 +189,6 @@ class mainFrame(Frame):
 			else:
 				self.selected_control_lines_indexes[i].set(0)
 				checkbox.config(state=DISABLED)
-		
-	def _create_select(self):
-		# in this option menu you can select number of control lines for the gate
-		possible_n_controls = list(range(len(self.lines_ys)))
-		self.selected_n_controls = StringVar(self.parent)
-		self.selected_n_controls.set(possible_n_controls[-1]) # default value
-		OptionMenu(
-			self.parent, 
-			self.selected_n_controls, 
-			command=self._set_n_controls, 
-			*possible_n_controls
-		).pack()
-		
-	def _set_n_controls(self, selected_value):
-		print(selected_value)
 
 	def calculate_transposition(self):
 		gates = [self.gates[index] for index in self.gates_indexes_on_lines]

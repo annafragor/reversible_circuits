@@ -19,7 +19,6 @@ class Circuit:
             self.gates_dict[vgate.center_point[0]] = ToffoliGate(self.n_lines, target_line_coord, control_line_indexes)
 
 
-
 class ToffoliGate:
     def __init__(self, n, target_line_index, control_lines_indexes=()):
         self.n_lines = n

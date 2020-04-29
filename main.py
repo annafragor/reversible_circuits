@@ -6,13 +6,18 @@ from tkinter import Tk
 
 
 if __name__ == '__main__':
-	root = Tk()
-	mf = mainFrame(root, lines_num=3)
-	root.mainloop()
+	# root = Tk()
+	# mf = mainFrame(root, lines_num=3)
+	# root.mainloop()
 
-	# outputs = [str(bin(elem))[2:].zfill(3) for elem in [7, 1, 4, 3, 0, 2, 6, 5]]
-	# tr = Transposition(3, outputs=outputs)
-	# tr.print_truth_table()
+	# outputs = [7, 1, 4, 3, 0, 2, 6, 5]
+	# outputs = [1, 0, 3, 2, 5, 7, 4, 6]  # 1
+	outputs = [7, 0, 1, 2, 3, 4, 5, 6]  # 2s
+	tr = Transposition(3, outputs=outputs)
+	tr.print_truth_table()
+	tr.greedy_transform_algorythm()
+	tr._calculate_function()
+	tr.print_truth_table()
 	# print()
 
 	# gates = [
