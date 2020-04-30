@@ -6,11 +6,15 @@ from maths.transposition import Transposition
 c = 10  # constant for gate size
 
 
-class mainFrame(Frame):
-	def __init__(self, parent, width=600, height=300, lines_num=3):
-		Frame.__init__(self, parent)
-		self.parent = parent
-		parent.geometry('%dx%d' % (800, 500))
+class EditorFrame:
+	def __init__(self, parent_window, parent_size, lines_num=3):
+		self.parent_window = parent_window
+		self.root = Toplevel(parent_window.root)
+		w, h = parent_size[0], parent_size[1]
+		self.root.geometry("500x500+{}+{}".format(510+w, h)) 
+		self.root.title("Схема")
+		# self.root.resizable(False, False)
+
 		self.selected_control_lines_indexes = []
 		self.checkboxes_for_control_lines = []
 		self.gates = []
@@ -18,11 +22,11 @@ class mainFrame(Frame):
 		self.nearest_gate_index, self.current_mouse_position = None, None
 		self.circuit = None
 
-		self._set_up_canvas(width, height, lines_num)	
+		self._set_up_canvas(500, 300, int(lines_num))	
 
 	def _set_up_canvas(self, width, height, lines_num):
-		self.canvas = Canvas(width=width, height=height, background="white")
-		self.canvas.pack(expand=True)
+		self.canvas = Canvas(self.root, width=width, height=height, background="white")
+		self.canvas.grid(row=5)
 		self.canvas.bind("<ButtonPress-1>", self.mouse_press)
 		self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 		self.canvas.bind("<B1-Motion>", self.drag_process)
@@ -130,7 +134,7 @@ class mainFrame(Frame):
 	def _add_lines(self, n_lines, width):
 		self.lines_ys = []
 		for i in range(n_lines):
-			y = 200 + c * i * 2
+			y = 100 + c * i * 2
 			self.canvas.create_line(
 				(0, y), (width, y),
 				width=1, tags=("line" + str(i),) 
@@ -154,33 +158,36 @@ class mainFrame(Frame):
 		)
 
 	def _create_buttons(self):
+		gridframe = Frame(self.root)
 		self.add_button = Button(
-			self.parent, text="+", fg="black",
+			gridframe, text="+", fg="black",
 			command=self.add_gate
 		)
-		self.add_button.pack()
+		self.add_button.grid(row=0, column=0)
 		
 		for i in range(len(self.lines_ys)):
 			self.selected_control_lines_indexes.append(IntVar())
 			self.checkboxes_for_control_lines.append(Checkbutton(
-				self.parent, 
+				gridframe, 
 				text=str(i), 
 				variable=self.selected_control_lines_indexes[i],
 				state=NORMAL if i > 0 else DISABLED
 				)
 			)
-			self.checkboxes_for_control_lines[i].pack()
+			self.checkboxes_for_control_lines[i].grid(row=i + 1, column=0)
 		
 		self.selected_target_index = IntVar()
 		self.selected_target_index.set(0)
 		for i in range(len(self.lines_ys)):
-			Radiobutton(text=str(i), variable=self.selected_target_index, value=i, command=self.disable_checkbox).pack()
+			r = Radiobutton(gridframe, text=str(i), variable=self.selected_target_index, value=i, command=self.disable_checkbox)
+			r.grid(row=i + 1, column=1)
 		
 		self.calculate_transposition_button = Button(
-			self.parent, text="calculate transposition", fg="black",
+			gridframe, text="calculate transposition", fg="black",
 			command=self.calculate_transposition
 		)
-		self.calculate_transposition_button.pack()
+		self.calculate_transposition_button.grid(row=len(self.lines_ys) + 2)
+		gridframe.grid(row=0, column=0)
 
 	def disable_checkbox(self):
 		for i, checkbox in enumerate(self.checkboxes_for_control_lines):
