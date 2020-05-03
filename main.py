@@ -20,6 +20,8 @@ if __name__ == '__main__':
 	# tr.print_truth_table()
 	# print()
 
+	# 7.0.2.1.5.4.3.6
+
 	# gates = [
 	# 	ToffoliGate(n=3, target_line_index=2, control_lines_indexes=[0, 1]),
 	# 	ToffoliGate(n=3, target_line_index=1, control_lines_indexes=[0, 2]),

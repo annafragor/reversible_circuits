@@ -1,5 +1,5 @@
 from tkinter import *
-from .schema_editor import *
+from .schema_editor import EditorFrame
 
 c = 10  # constant for gate size
 

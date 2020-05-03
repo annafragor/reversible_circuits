@@ -2,6 +2,7 @@ from tkinter import *
 from .toffoli_gate import ToffoliGateVisual
 from maths.circuit import Circuit
 from maths.transposition import Transposition
+import re
 
 c = 10  # constant for gate size
 
@@ -26,7 +27,7 @@ class EditorFrame:
 
 	def _set_up_canvas(self, width, height, lines_num):
 		self.canvas = Canvas(self.root, width=width, height=height, background="white")
-		self.canvas.grid(row=5)
+		self.canvas.grid(row=1)
 		self.canvas.bind("<ButtonPress-1>", self.mouse_press)
 		self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 		self.canvas.bind("<B1-Motion>", self.drag_process)
@@ -157,6 +158,53 @@ class EditorFrame:
 			)
 		)
 
+	def draw_schema_from_input(self):
+		input_func_list = [int(inp) for inp in re.findall(r"(\d+)\.{0,1}", self.input_func_int_data.get())]
+		if len(input_func_list) != 2 ** len(self.lines_ys) or len(set(input_func_list)) != 2 ** len(self.lines_ys):
+			print("error")
+			return
+		tr = Transposition(len(self.lines_ys), outputs=input_func_list)
+		tr.print_truth_table()
+		tr.greedy_transform_algorythm()
+		self.draw_schema_from_math_gates(tr.gates)
+
+	def draw_schema_from_math_gates(self, gates):
+		self.clear_canvas()
+		
+		if not self.gates:  # delete this!
+			self.gates.append(ToffoliGateVisual(
+				self.canvas, 
+				n=len(self.lines_ys),
+				target_index=0, 
+				selected_control_indexes=[],
+				name="Extra",
+				)
+			)
+		for i, gate in enumerate(gates):
+			self.gates.append(ToffoliGateVisual(
+				self.canvas, 
+				n=len(self.lines_ys),
+				target_index=gate.target_line_index, 
+				selected_control_indexes=gate.control_lines_indexes,
+				name="TofGateMillerMaslov" + str(i),
+				x=30 * (i + 1), 
+				y=self.lines_ys[-gate.target_line_index - 1], 
+				up=False,
+				on_schema=True
+				)
+			)
+			self.gates_indexes_on_lines.append(i + 1)
+
+	def clear_canvas(self):
+		for gate in [self.gates[index] for index in self.gates_indexes_on_lines]:
+			self.canvas.delete(gate.circle_id)
+			self.canvas.delete(gate.horisontal_line_id)
+			self.canvas.delete(gate.vertical_line_id)
+			for dot_id in gate.dots_id:
+				self.canvas.delete(dot_id)
+		self.gates = [gate for gate in self.gates if not gate.on_schema]
+		self.gates_indexes_on_lines = []
+
 	def _create_buttons(self):
 		gridframe = Frame(self.root)
 		self.add_button = Button(
@@ -187,6 +235,19 @@ class EditorFrame:
 			command=self.calculate_transposition
 		)
 		self.calculate_transposition_button.grid(row=len(self.lines_ys) + 2)
+
+		self.input_func_int_data = Entry(
+			gridframe, validate="key"
+		)
+		self.input_func_int_data['validatecommand'] = (self.input_func_int_data.register(_check_input),'%P','%d')
+		self.input_func_int_data.grid(row=len(self.lines_ys) + 3, column=0)
+
+		self.add_button = Button(
+			gridframe, text="print schema", fg="black",
+			command=self.draw_schema_from_input
+		)
+		self.add_button.grid(row=len(self.lines_ys) + 3, column=1)
+
 		gridframe.grid(row=0, column=0)
 
 	def disable_checkbox(self):
@@ -210,4 +271,10 @@ class EditorFrame:
 			return self.gates[self.nearest_gate_index]
 		else:
 			return None
-	
+
+
+def _check_input(inp_str, acttyp):
+	if acttyp == '1': #insert
+		if not re.fullmatch(r"((\d+)\.{0,1})*", inp_str):
+			return False
+	return True
