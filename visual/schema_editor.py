@@ -41,6 +41,7 @@ class EditorFrame:
 			self.current_mouse_position = (event.x, event.y)
 
 	def mouse_release(self, event):
+		self.set_nearest_gate(event)
 		if self.nearest_gate_index != None:
 			nearest_line = self.get_nearest_line(event)
 			dots_ys = self.nearest_gate.get_dots_ys()
@@ -80,7 +81,7 @@ class EditorFrame:
 		self.nearest_gate_index = None
 
 	def drag_process(self, event):
-		if self.nearest_gate_index:
+		if self.nearest_gate_index is not None:
 			x_delta = event.x - self.current_mouse_position[0]
 			y_delta = event.y - self.current_mouse_position[1]
 			self.current_mouse_position = (event.x, event.y)
@@ -154,18 +155,24 @@ class EditorFrame:
 			n=len(self.lines_ys),
 			target_index=self.selected_target_index.get(), 
 			selected_control_indexes=[i for i, e in enumerate(control_indexes) if e == 1],
-			name=name
+			name=name,
+			on_schema=False
 			)
 		)
 
-	def draw_schema_from_input(self):
+	def draw_schema_from_input(self, straight=False, backward=False, bidirectional=False):
 		input_func_list = [int(inp) for inp in re.findall(r"(\d+)\.{0,1}", self.input_func_int_data.get())]
 		if len(input_func_list) != 2 ** len(self.lines_ys) or len(set(input_func_list)) != 2 ** len(self.lines_ys):
 			print("error")
 			return
 		tr = Transposition(len(self.lines_ys), outputs=input_func_list)
 		tr.print_truth_table()
-		tr.greedy_transform_algorythm()
+		if straight:
+			tr.greedy_transform_algorythm()
+		elif backward:
+			tr.input_to_output_transform_algorythm()
+		else:
+			tr.bidirectional_transform()  # by default do straightforward
 		self.draw_schema_from_math_gates(tr.gates)
 
 	def draw_schema_from_math_gates(self, gates):
@@ -243,10 +250,28 @@ class EditorFrame:
 		self.input_func_int_data.grid(row=len(self.lines_ys) + 3, column=0)
 
 		self.add_button = Button(
-			gridframe, text="print schema", fg="black",
-			command=self.draw_schema_from_input
+			gridframe, text="straightforward algo", fg="black",
+			command=lambda: self.draw_schema_from_input(straight=True) 
 		)
 		self.add_button.grid(row=len(self.lines_ys) + 3, column=1)
+
+		self.add_button = Button(
+			gridframe, text="backward algo", fg="black",
+			command=lambda: self.draw_schema_from_input(backward=True)
+		)
+		self.add_button.grid(row=len(self.lines_ys) + 3, column=2)
+
+		self.add_button = Button(
+			gridframe, text="bidirectional algo", fg="black",
+			command=lambda: self.draw_schema_from_input(bidirectional=True)
+		)
+		self.add_button.grid(row=len(self.lines_ys) + 3, column=3)
+
+		self.add_button = Button(
+			gridframe, text="clear canvas", fg="black",
+			command=self.clear_canvas
+		)
+		self.add_button.grid(row=len(self.lines_ys) + 2, column=2)
 
 		gridframe.grid(row=0, column=0)
 
@@ -259,6 +284,7 @@ class EditorFrame:
 				checkbox.config(state=DISABLED)
 
 	def calculate_transposition(self):
+		self.gates_indexes_on_lines = [i for i, gate in enumerate(self.gates) if gate.on_schema]
 		gates = [self.gates[index] for index in self.gates_indexes_on_lines]
 		n = len(self.lines_ys)
 		self.circuit = Circuit(n, visual_gates=gates, y_lines=self.lines_ys)

@@ -25,6 +25,9 @@ class ToffoliGate:
         self.target_line_index = target_line_index
         self.control_lines_indexes = control_lines_indexes
 
+    def __str__(self):
+        return "target: " + str(self.target_line_index) + "; control: " + str(self.control_lines_indexes)
+
     def set_control_lines_indexes(self):
         pass
 

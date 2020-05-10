@@ -14,8 +14,8 @@ if __name__ == '__main__':
 	# outputs = [1, 0, 3, 2, 5, 7, 4, 6]  # 1
 	# outputs = [7, 0, 1, 2, 3, 4, 5, 6]  # 2s
 	# tr = Transposition(3, outputs=outputs)
-	# tr.print_truth_table()
-	# tr.greedy_transform_algorythm()
+	# tr.input_to_output_transform_algorythm()
+	# print(tr.gates)
 	# tr._calculate_function()
 	# tr.print_truth_table()
 	# print()
