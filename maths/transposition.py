@@ -176,7 +176,6 @@ class Transposition:
         ]
         left_gates = []
         right_gates = []
-        print("111")
         
         if table[1].index(table[0][0]) != 0:  # f+(0) != 0 => invert inputs
             inp_out_delta = self.hamming_distance(table[1][0], table[0][0])
@@ -190,7 +189,7 @@ class Transposition:
                     if table[1][0][l] == 1:
                         right_gates.append(ToffoliGate(self.n, l))
                         for index in range(2 ** self.n):
-                            r = [int(ch) for ch in self._calculate_function_for_input(arr=table[1][index])]
+                            r = [int(ch) for ch in self.apply_gate(input_arr=table[1][index], gate=right_gates[-1])]
                             table[1][index] = r
             else:
                 # do input-to-output algo

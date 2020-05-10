@@ -2,6 +2,7 @@ from tkinter import *
 from .toffoli_gate import ToffoliGateVisual
 from maths.circuit import Circuit
 from maths.transposition import Transposition
+from numpy.random import permutation
 import re
 
 c = 10  # constant for gate size
@@ -24,7 +25,7 @@ class EditorFrame:
 		self.nearest_gate_index, self.current_mouse_position = None, None
 		self.circuit = None
 
-		self._set_up_window(100 * int(lines_num), 70 * int(lines_num), int(lines_num))
+		self._set_up_window(120 * int(lines_num), 70 * int(lines_num), int(lines_num))
 
 	def _set_up_window(self, width, height, lines_num):
 		gridframe_left = Frame(self.root)
@@ -39,8 +40,12 @@ class EditorFrame:
 		gridframe_right.grid(row=0, column=1)
 	
 	def _set_up_canvas(self, gridframe, width, height, lines_num):
-		self.canvas = Canvas(gridframe, width=width, height=height, background="white")
+		self.canvas = Canvas(gridframe, width=width, height=height, background="white", scrollregion=(0, 0, width * 3, width * 3))
 		self.canvas.grid(row=1, column=0)
+		hbar = Scrollbar(gridframe, orient=HORIZONTAL)
+		hbar.grid(row=2, column=0)
+		hbar.config(command=self.canvas.xview)
+		self.canvas.config(xscrollcommand=hbar.set)
 		self.canvas.bind("<ButtonPress-1>", self.mouse_press)
 		self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 		self.canvas.bind("<B1-Motion>", self.drag_process)
@@ -150,7 +155,7 @@ class EditorFrame:
 		for i in range(n_lines):
 			y = width / 2 - n_lines * c + c * i * 2
 			self.canvas.create_line(
-				(0, y), (width, y),
+				(0, y), (width * 3, y),
 				width=1, tags=("line" + str(i),) 
 			)
 			self.lines_ys.append(y)
@@ -201,7 +206,7 @@ class EditorFrame:
 				name="TofGateMillerMaslov" + str(i),
 				x=30 * (i + 1), 
 				y=self.lines_ys[-gate.target_line_index - 1], 
-				up=False if not gate.control_lines_indexes else True,
+				up=False if gate.control_lines_indexes else True,
 				on_schema=True
 				)
 			)
@@ -253,42 +258,49 @@ class EditorFrame:
 		self._preview_gate()
 
 	def _create_algo_buttons(self, gridframe):
+		self.generate_random_btn = Button(
+			gridframe, text="generate random", fg="black",
+			command=self._generate_random_input,
+		)
+		self.generate_random_btn.grid(row=0, column=0)
+
 		label = Label(gridframe, text="input function")
-		label.grid(row=0, column=0)
+		label.grid(row=1, column=0)
+
 		self.input_func_int_data = Entry(
 			gridframe, validate="key"
 		)
 		self.input_func_int_data['validatecommand'] = (self.input_func_int_data.register(self._check_input),'%P','%d')
-		self.input_func_int_data.grid(row=1, column=0)
+		self.input_func_int_data.grid(row=2, column=0)
 		
 		self.truth_table = StringVar()
 		tr_t = Message(gridframe, textvariable=self.truth_table)
-		tr_t.grid(row=2, column=0)
+		tr_t.grid(row=3, column=0)
 		
 		self.backward_algo_btn = Button(
 			gridframe, text="backward algo", fg="black",
 			command=lambda: self.draw_schema_from_input(straight=True),
 			state=DISABLED
 		)
-		self.backward_algo_btn.grid(row=3, column=0)
+		self.backward_algo_btn.grid(row=4, column=0)
 
 		self.straightforward_algo_btn = Button(
 			gridframe, text="straightforward algo", fg="black",
 			command=lambda: self.draw_schema_from_input(backward=True),
 			state=DISABLED
 		)
-		self.straightforward_algo_btn.grid(row=4, column=0)
+		self.straightforward_algo_btn.grid(row=5, column=0)
 
 		self.bidirection_algo_btn = Button(
 			gridframe, text="bidirectional algo", fg="black",
 			command=lambda: self.draw_schema_from_input(bidirectional=True),
 			state=DISABLED
 		)
-		self.bidirection_algo_btn.grid(row=5, column=0)
+		self.bidirection_algo_btn.grid(row=6, column=0)
 
 	def _create_other(self, gridframe):
 		inner_gridframe = Frame(gridframe)
-		inner_gridframe.grid(row=2, column=0)
+		inner_gridframe.grid(row=3, column=0)
 		self.calculate_transposition_button = Button(
 			inner_gridframe, text="calculate transposition", fg="black",
 			command=self.calculate_transposition
@@ -303,6 +315,13 @@ class EditorFrame:
 
 		self.error_text = Label(gridframe, text="error")
 		self.error_text.grid(row=3, column=0)
+
+	def _generate_random_input(self):
+		generated_input = ".".join([str(elem) for elem in permutation(2 ** len(self.lines_ys))])
+		if self.input_func_int_data.get():
+			self.input_func_int_data.delete(0, END)
+		self.input_func_int_data.insert(0, generated_input)
+		print(generated_input)
 
 	def disable_checkbox(self):
 		for i, checkbox in enumerate(self.checkboxes_for_control_lines):
