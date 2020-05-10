@@ -15,7 +15,7 @@ class mainFrame(Frame):
 		Frame.__init__(self, root)
 		self.root = root
 		self.root.title("Главное окно")
-		# self.root.geometry('%dx%d' % (300, 200))
+		self.root.geometry('%dx%d' % (width, height))
 		self.root.resizable(False, False)
 
 		self._set_up_buttons()
@@ -24,11 +24,10 @@ class mainFrame(Frame):
 		label = Label(self.root, text="Число линий на схеме")
 		label.grid(row=1, column=0)
 
-		self.input_lines_num = Entry(
-			self.root, validate="key"
-		)
-		self.input_lines_num['validatecommand'] = (self.input_lines_num.register(_check_number),'%P','%d')
-		self.input_lines_num.grid(row=1, column=1)
+		opts = [str(i) for i in range(1,7)]
+		self.input_lines_num = StringVar(self.root, opts[2])
+		w = OptionMenu(self.root, self.input_lines_num, *opts)
+		w.grid(row=1, column=1)
 
 		self.create_window_button = Button(
 			self.root, text="Add Schema Editor", fg="black",
@@ -39,9 +38,6 @@ class mainFrame(Frame):
 			)
 		)
 		self.create_window_button.grid(row=2)
-	
-	def _create_schema_editor_window(self):
-		pass
 
 	def _get_window_size(self):
 		self.root.update_idletasks()

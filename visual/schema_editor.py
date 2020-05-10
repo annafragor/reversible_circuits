@@ -12,28 +12,40 @@ class EditorFrame:
 		self.parent_window = parent_window
 		self.root = Toplevel(parent_window.root)
 		w, h = parent_size[0], parent_size[1]
-		self.root.geometry("500x500+{}+{}".format(510+w, h)) 
+		self.root.geometry("550x400+{}+{}".format(250+w, h)) 
 		self.root.title("Схема")
 		# self.root.resizable(False, False)
 
 		self.selected_control_lines_indexes = []
 		self.checkboxes_for_control_lines = []
 		self.gates = []
+		self.test_gate = None
 		self.gates_indexes_on_lines = []
 		self.nearest_gate_index, self.current_mouse_position = None, None
 		self.circuit = None
 
-		self._set_up_canvas(500, 300, int(lines_num))	
+		self._set_up_window(100 * int(lines_num), 70 * int(lines_num), int(lines_num))
 
-	def _set_up_canvas(self, width, height, lines_num):
-		self.canvas = Canvas(self.root, width=width, height=height, background="white")
-		self.canvas.grid(row=1)
+	def _set_up_window(self, width, height, lines_num):
+		gridframe_left = Frame(self.root)
+		gridframe_right = Frame(self.root)
+		gridframe_add = Frame(gridframe_left)
+		self._set_up_canvas(gridframe_left, width, height, lines_num)	
+		self._create_add_buttons(gridframe_add)
+		self._create_algo_buttons(gridframe_right)
+		self._create_other(gridframe_left)
+		gridframe_add.grid(row=0, column=0)
+		gridframe_left.grid(row=0, column=0)
+		gridframe_right.grid(row=0, column=1)
+	
+	def _set_up_canvas(self, gridframe, width, height, lines_num):
+		self.canvas = Canvas(gridframe, width=width, height=height, background="white")
+		self.canvas.grid(row=1, column=0)
 		self.canvas.bind("<ButtonPress-1>", self.mouse_press)
 		self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 		self.canvas.bind("<B1-Motion>", self.drag_process)
 		self.canvas.bind("<Button-2>", self.rotate_gate)  # клик колёсиком мыши
 		self._add_lines(lines_num, width)
-		self._create_buttons()
 
 	def mouse_press(self, event):
 		self.set_nearest_gate(event)
@@ -97,7 +109,7 @@ class EditorFrame:
 				self.nearest_gate.control_indexes,
 				self.nearest_gate.center_point[0],
 				self.nearest_gate.center_point[1],
-				(not self.nearest_gate.up)
+				(not self.nearest_gate.up) if self.nearest_gate.control_indexes else True
 			)
 			self.canvas.delete(self.nearest_gate.name_tag)
 			self.gates[self.nearest_gate_index] = ToffoliGateVisual(
@@ -136,7 +148,7 @@ class EditorFrame:
 	def _add_lines(self, n_lines, width):
 		self.lines_ys = []
 		for i in range(n_lines):
-			y = 100 + c * i * 2
+			y = width / 2 - n_lines * c + c * i * 2
 			self.canvas.create_line(
 				(0, y), (width, y),
 				width=1, tags=("line" + str(i),) 
@@ -145,20 +157,23 @@ class EditorFrame:
 			self.canvas.create_text(10, y - 5, text="x"+str(n_lines - i - 1))
 			self.canvas.create_text(width - 5, y - 5, text="y"+str(n_lines - i - 1))
 
-	def add_gate(self):
-		print("control", [var.get() for var in self.selected_control_lines_indexes])
-		print("target", self.selected_target_index.get())
+	def add_gate(self, test=False):
 		name = "TofGate" + str(len(self.gates) + 1)
 		control_indexes = [var.get() for var in self.selected_control_lines_indexes]
-		self.gates.append(ToffoliGateVisual(
-			self.canvas, 
+		gate = ToffoliGateVisual(
+			self.canvas if not test else self.test_canvas, 
 			n=len(self.lines_ys),
 			target_index=self.selected_target_index.get(), 
 			selected_control_indexes=[i for i, e in enumerate(control_indexes) if e == 1],
 			name=name,
-			on_schema=False
-			)
+			on_schema=False,
+			x=20 if test else 50,
+			y=15 + 20 * self.selected_target_index.get() if test else 50
 		)
+		if not test:
+			self.gates.append(gate)
+		else:
+			self.test_gate = gate
 
 	def draw_schema_from_input(self, straight=False, backward=False, bidirectional=False):
 		input_func_list = [int(inp) for inp in re.findall(r"(\d+)\.{0,1}", self.input_func_int_data.get())]
@@ -177,16 +192,6 @@ class EditorFrame:
 
 	def draw_schema_from_math_gates(self, gates):
 		self.clear_canvas()
-		
-		if not self.gates:  # delete this!
-			self.gates.append(ToffoliGateVisual(
-				self.canvas, 
-				n=len(self.lines_ys),
-				target_index=0, 
-				selected_control_indexes=[],
-				name="Extra",
-				)
-			)
 		for i, gate in enumerate(gates):
 			self.gates.append(ToffoliGateVisual(
 				self.canvas, 
@@ -196,84 +201,108 @@ class EditorFrame:
 				name="TofGateMillerMaslov" + str(i),
 				x=30 * (i + 1), 
 				y=self.lines_ys[-gate.target_line_index - 1], 
-				up=False,
+				up=False if not gate.control_lines_indexes else True,
 				on_schema=True
 				)
 			)
-			self.gates_indexes_on_lines.append(i + 1)
+			self.gates_indexes_on_lines.append(i)
 
 	def clear_canvas(self):
-		for gate in [self.gates[index] for index in self.gates_indexes_on_lines]:
-			self.canvas.delete(gate.circle_id)
-			self.canvas.delete(gate.horisontal_line_id)
-			self.canvas.delete(gate.vertical_line_id)
-			for dot_id in gate.dots_id:
-				self.canvas.delete(dot_id)
-		self.gates = [gate for gate in self.gates if not gate.on_schema]
+		for gate in self.gates:
+			self._remove_gate_from_canvas(gate, self.canvas)
+		self.gates = []
 		self.gates_indexes_on_lines = []
 
-	def _create_buttons(self):
-		gridframe = Frame(self.root)
-		self.add_button = Button(
-			gridframe, text="+", fg="black",
-			command=self.add_gate
-		)
-		self.add_button.grid(row=0, column=0)
+	def _remove_gate_from_canvas(self, gate, canvas):
+		canvas.delete(gate.circle_id)
+		canvas.delete(gate.horisontal_line_id)
+		canvas.delete(gate.vertical_line_id)
+		for dot_id in gate.dots_id:
+			canvas.delete(dot_id)
+
+	def _create_add_buttons(self, gridframe):
+		inner_gridframe = Frame(gridframe)
+		inner_gridframe.grid(row=0, column=0)
 		
 		for i in range(len(self.lines_ys)):
 			self.selected_control_lines_indexes.append(IntVar())
 			self.checkboxes_for_control_lines.append(Checkbutton(
-				gridframe, 
+				inner_gridframe, 
 				text=str(i), 
 				variable=self.selected_control_lines_indexes[i],
-				state=NORMAL if i > 0 else DISABLED
+				state=NORMAL if i > 0 else DISABLED,
+				command=self._preview_gate
 				)
 			)
-			self.checkboxes_for_control_lines[i].grid(row=i + 1, column=0)
+			self.checkboxes_for_control_lines[i].grid(row=i, column=0)
 		
 		self.selected_target_index = IntVar()
 		self.selected_target_index.set(0)
 		for i in range(len(self.lines_ys)):
-			r = Radiobutton(gridframe, text=str(i), variable=self.selected_target_index, value=i, command=self.disable_checkbox)
-			r.grid(row=i + 1, column=1)
-		
-		self.calculate_transposition_button = Button(
-			gridframe, text="calculate transposition", fg="black",
-			command=self.calculate_transposition
-		)
-		self.calculate_transposition_button.grid(row=len(self.lines_ys) + 2)
+			r = Radiobutton(inner_gridframe, text=str(i), variable=self.selected_target_index, value=i, command=self.disable_checkbox)
+			r.grid(row=i, column=1)
 
+		self.test_canvas = Canvas(gridframe, width=40, height=len(self.lines_ys) * 20 + 10, background="white")
+		self.test_canvas.grid(row=0, column=1)
+
+		self.add_button = Button(
+			gridframe, text="add gate", fg="black",
+			command=self.add_gate
+		)
+		self.add_button.grid(row=0, column=3)
+		self._preview_gate()
+
+	def _create_algo_buttons(self, gridframe):
+		label = Label(gridframe, text="input function")
+		label.grid(row=0, column=0)
 		self.input_func_int_data = Entry(
 			gridframe, validate="key"
 		)
-		self.input_func_int_data['validatecommand'] = (self.input_func_int_data.register(_check_input),'%P','%d')
-		self.input_func_int_data.grid(row=len(self.lines_ys) + 3, column=0)
-
-		self.add_button = Button(
-			gridframe, text="straightforward algo", fg="black",
-			command=lambda: self.draw_schema_from_input(straight=True) 
-		)
-		self.add_button.grid(row=len(self.lines_ys) + 3, column=1)
-
-		self.add_button = Button(
+		self.input_func_int_data['validatecommand'] = (self.input_func_int_data.register(self._check_input),'%P','%d')
+		self.input_func_int_data.grid(row=1, column=0)
+		
+		self.truth_table = StringVar()
+		tr_t = Message(gridframe, textvariable=self.truth_table)
+		tr_t.grid(row=2, column=0)
+		
+		self.backward_algo_btn = Button(
 			gridframe, text="backward algo", fg="black",
-			command=lambda: self.draw_schema_from_input(backward=True)
+			command=lambda: self.draw_schema_from_input(straight=True),
+			state=DISABLED
 		)
-		self.add_button.grid(row=len(self.lines_ys) + 3, column=2)
+		self.backward_algo_btn.grid(row=3, column=0)
 
-		self.add_button = Button(
+		self.straightforward_algo_btn = Button(
+			gridframe, text="straightforward algo", fg="black",
+			command=lambda: self.draw_schema_from_input(backward=True),
+			state=DISABLED
+		)
+		self.straightforward_algo_btn.grid(row=4, column=0)
+
+		self.bidirection_algo_btn = Button(
 			gridframe, text="bidirectional algo", fg="black",
-			command=lambda: self.draw_schema_from_input(bidirectional=True)
+			command=lambda: self.draw_schema_from_input(bidirectional=True),
+			state=DISABLED
 		)
-		self.add_button.grid(row=len(self.lines_ys) + 3, column=3)
+		self.bidirection_algo_btn.grid(row=5, column=0)
 
-		self.add_button = Button(
-			gridframe, text="clear canvas", fg="black",
+	def _create_other(self, gridframe):
+		inner_gridframe = Frame(gridframe)
+		inner_gridframe.grid(row=2, column=0)
+		self.calculate_transposition_button = Button(
+			inner_gridframe, text="calculate transposition", fg="black",
+			command=self.calculate_transposition
+		)
+		self.calculate_transposition_button.grid(row=0, column=0)
+
+		self.clear_btn = Button(
+			inner_gridframe, text="clear canvas", fg="black",
 			command=self.clear_canvas
 		)
-		self.add_button.grid(row=len(self.lines_ys) + 2, column=2)
+		self.clear_btn.grid(row=0, column=1)
 
-		gridframe.grid(row=0, column=0)
+		self.error_text = Label(gridframe, text="error")
+		self.error_text.grid(row=3, column=0)
 
 	def disable_checkbox(self):
 		for i, checkbox in enumerate(self.checkboxes_for_control_lines):
@@ -282,6 +311,12 @@ class EditorFrame:
 			else:
 				self.selected_control_lines_indexes[i].set(0)
 				checkbox.config(state=DISABLED)
+		self._preview_gate()
+
+	def _preview_gate(self):
+		if self.test_gate:
+			self._remove_gate_from_canvas(self.test_gate, self.test_canvas)
+		self.add_gate(test=True)
 
 	def calculate_transposition(self):
 		self.gates_indexes_on_lines = [i for i, gate in enumerate(self.gates) if gate.on_schema]
@@ -289,7 +324,7 @@ class EditorFrame:
 		n = len(self.lines_ys)
 		self.circuit = Circuit(n, visual_gates=gates, y_lines=self.lines_ys)
 		tr = Transposition(n, circuit=self.circuit)
-		tr.print_truth_table()
+		self.truth_table.set(tr.get_truth_table())
 
 	@property
 	def nearest_gate(self):
@@ -298,9 +333,17 @@ class EditorFrame:
 		else:
 			return None
 
-
-def _check_input(inp_str, acttyp):
-	if acttyp == '1': #insert
-		if not re.fullmatch(r"((\d+)\.{0,1})*", inp_str):
-			return False
-	return True
+	def _check_input(self, inp_str, acttyp):
+		if acttyp == '1': # 1 = insert, 0 = delete, -1 = others
+			if not re.fullmatch(r"((\d+)\.{0,1})*", inp_str):
+				return False
+		input_func_list = [int(inp) for inp in re.findall(r"(\d+)\.{0,1}", inp_str)]
+		if set(input_func_list) != set(list(range(2 ** len(self.lines_ys)))):
+			self.straightforward_algo_btn['state'] = DISABLED
+			self.backward_algo_btn['state'] = DISABLED
+			self.bidirection_algo_btn['state'] = DISABLED
+		else:
+			self.straightforward_algo_btn['state'] = NORMAL
+			self.backward_algo_btn['state'] = NORMAL
+			self.bidirection_algo_btn['state'] = NORMAL
+		return True

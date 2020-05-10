@@ -7,7 +7,7 @@ from tkinter import Tk
 
 if __name__ == '__main__':
 	root = Tk()
-	mf = mainFrame(root)
+	mf = mainFrame(root, width=250, height=60)
 	root.mainloop()
 
 	# outputs = [7, 1, 4, 3, 0, 2, 6, 5]

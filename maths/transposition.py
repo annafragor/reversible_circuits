@@ -62,9 +62,16 @@ class Transposition:
         return output_str
 
     def print_truth_table(self):
+        print(self.get_truth_table())
+
+    def get_truth_table(self):
+        truth_table = ""
         for i in range(len(self.inputs_str)):
-            print(' '.join(self.inputs_str[i]), '|', ' '.join(self.outputs_str[i]))
-        print()
+            truth_table += ' '.join(self.inputs_str[i])
+            truth_table += ' | '
+            truth_table += ' '.join(self.outputs_str[i])
+            truth_table += '\n'
+        return truth_table
 
     def greedy_transform_algorythm(self, current_f_outputs=None):
         # straightforward Miller-Maslov algorythm
@@ -240,7 +247,6 @@ class Transposition:
         right_gates.reverse()
         self.gates = left_gates + right_gates
        
-
     def hamming_distance(self, str1, str2):
         distance = 0
         if len(str1) != len(str2):
