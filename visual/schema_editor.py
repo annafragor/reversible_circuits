@@ -75,6 +75,10 @@ class EditorFrame:
 			self.magnet(nearest_line, event, do=False)
 	
 	def magnet(self, nearest_line, event, do=True):
+		if self.truth_table.get():
+			msg = "Data in the truth table is not valid anymore."
+		else:
+			msg = ""
 		if do:
 			# примагничиваем элемент к проводу
 			# добавляем его в список элементов, которые находятся именно на обратимой схеме (т.е. на проводах)
@@ -84,6 +88,9 @@ class EditorFrame:
 			if not self.nearest_gate.on_schema:  # если элемент не был на схеме (если был - ничего делать не нужно)
 				self.nearest_gate.on_schema = True
 				self.gates_indexes_on_lines.append(self.nearest_gate_index)
+				self.info_text.set("INFO: You added gate to the circuit.\n" + msg)
+			elif y_delta:  # если элемент был на схеме, но переместился на другой провод
+				self.info_text.set("INFO: You moved gate on the circuit.\n" + msg)
 		else:
 			# отрисовываем элемент там, где отжали кнопку, не добавляя на схему
 			self.nearest_gate.reset_coordinates(
@@ -95,6 +102,8 @@ class EditorFrame:
 				# если да - удаление из индексов
 				self.gates_indexes_on_lines.remove(self.nearest_gate_index)
 				self.nearest_gate.on_schema = False
+
+				self.info_text.set("INFO: You removed gate from the circuit.\n" + msg)
 		self.nearest_gate_index = None
 
 	def drag_process(self, event):
@@ -313,15 +322,19 @@ class EditorFrame:
 		)
 		self.clear_btn.grid(row=0, column=1)
 
-		self.error_text = Label(gridframe, text="error")
-		self.error_text.grid(row=3, column=0)
+		self.error_text = StringVar()
+		err_t = Message(gridframe, textvariable=self.error_text, width=300)
+		err_t.grid(row=4)
+
+		self.info_text = StringVar()
+		info_t = Message(gridframe, textvariable=self.info_text, width=300)
+		info_t.grid(row=5)
 
 	def _generate_random_input(self):
 		generated_input = ".".join([str(elem) for elem in permutation(2 ** len(self.lines_ys))])
 		if self.input_func_int_data.get():
 			self.input_func_int_data.delete(0, END)
 		self.input_func_int_data.insert(0, generated_input)
-		print(generated_input)
 
 	def disable_checkbox(self):
 		for i, checkbox in enumerate(self.checkboxes_for_control_lines):
@@ -340,6 +353,9 @@ class EditorFrame:
 	def calculate_transposition(self):
 		self.gates_indexes_on_lines = [i for i, gate in enumerate(self.gates) if gate.on_schema]
 		gates = [self.gates[index] for index in self.gates_indexes_on_lines]
+		self.info_text.set("")
+		if not gates:
+			self.info_text.set("INFO: You have no gates on schema. Your transposition is identity.")
 		n = len(self.lines_ys)
 		self.circuit = Circuit(n, visual_gates=gates, y_lines=self.lines_ys)
 		tr = Transposition(n, circuit=self.circuit)
@@ -361,8 +377,13 @@ class EditorFrame:
 			self.straightforward_algo_btn['state'] = DISABLED
 			self.backward_algo_btn['state'] = DISABLED
 			self.bidirection_algo_btn['state'] = DISABLED
+			if input_func_list:
+				self.error_text.set("ERROR: Invalid input function data.")
+			else:
+				self.error_text.set("")
 		else:
 			self.straightforward_algo_btn['state'] = NORMAL
 			self.backward_algo_btn['state'] = NORMAL
 			self.bidirection_algo_btn['state'] = NORMAL
+			self.error_text.set("")
 		return True
