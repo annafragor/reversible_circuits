@@ -119,11 +119,10 @@ class EditorFrame:
 		if self.nearest_gate:
 			params = (
 				self.nearest_gate.name_tag,
-				self.nearest_gate.target_index,
-				self.nearest_gate.control_indexes,
+				len(self.lines_ys) - self.nearest_gate.target_index - 1,
+				[len(self.lines_ys) - index - 1 for index in self.nearest_gate.control_indexes],
 				self.nearest_gate.center_point[0],
-				self.nearest_gate.center_point[1],
-				(not self.nearest_gate.up) if self.nearest_gate.control_indexes else True
+				self.nearest_gate.center_point[1] + 2,
 			)
 			self.canvas.delete(self.nearest_gate.name_tag)
 			self.gates[self.nearest_gate_index] = ToffoliGateVisual(
@@ -134,7 +133,6 @@ class EditorFrame:
 				selected_control_indexes=params[2],
 				x=params[3],
 				y=params[4],
-				up=params[5]
             )			
 
 	def set_nearest_gate(self, event):
@@ -148,15 +146,12 @@ class EditorFrame:
 		if self.nearest_gate.n_controls >= len(self.lines_ys):
 			return None		
 		for i in range(len(self.lines_ys)):
-			delta_if_up = self.nearest_gate.center_point[1] - self.lines_ys[i]
-			if self.nearest_gate.n_controls > 0:
-				delta_if_down = self.nearest_gate.center_point[1] - 2 * self.nearest_gate.n_controls * self.nearest_gate.c  
-			else:
-				delta_if_down = self.nearest_gate.center_point[1] - self.nearest_gate.c
-			delta_if_down -= self.lines_ys[i]
-
-			if (self.nearest_gate.up and abs(delta_if_up) <= self.nearest_gate.c) or (not self.nearest_gate.up and abs(delta_if_down) <= self.nearest_gate.c):
-				return self.lines_ys[i] if self.nearest_gate.up else self.lines_ys[i + self.nearest_gate.n_controls]
+			if self.nearest_gate.center_point[1] >= self.lines_ys[i]:  # центр ниже текущей линии, т.е. нужно проверить, поднимаем ли элемент выше
+				delta = self.nearest_gate.center_point[1] - self.lines_ys[i]
+			else:  # центр выше текущей линии, т.е. нужно проверить, опускаем ли элемент ниже
+				delta = self.lines_ys[i] - self.nearest_gate.center_point[1]
+			if delta <= self.nearest_gate.c:
+					return self.lines_ys[i]
 		return None
 
 	def _add_lines(self, n_lines, width):
@@ -210,12 +205,11 @@ class EditorFrame:
 			self.gates.append(ToffoliGateVisual(
 				self.canvas, 
 				n=len(self.lines_ys),
-				target_index=gate.target_line_index, 
-				selected_control_indexes=gate.control_lines_indexes,
+				target_index=-gate.target_line_index - 1, 
+				selected_control_indexes=[-index - 1 for index in gate.control_lines_indexes],
 				name="TofGateMillerMaslov" + str(i),
 				x=30 * (i + 1), 
 				y=self.lines_ys[-gate.target_line_index - 1], 
-				up=False if gate.control_lines_indexes else True,
 				on_schema=True
 				)
 			)

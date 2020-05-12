@@ -2,16 +2,15 @@ from tkinter import Frame
 
 
 class ToffoliGateVisual(Frame):
-	def __init__(self, canvas, n, target_index, selected_control_indexes, name, x=50, y=50, c=10, up=True, on_schema=False):
+	def __init__(self, canvas, n, target_index, selected_control_indexes, name, x=50, y=50, c=10, on_schema=False):
 		# n_controls - число управляющих линий
 		self.n_controls = len(selected_control_indexes)
 		self.name_tag = name
 		self.center_point = (x, y)
 		self.c = c
-		self.up = up
 		self.on_schema = on_schema
-		self.target_index = target_index
-		self.control_indexes = selected_control_indexes
+		self.target_index = target_index if target_index >= 0 else n + target_index
+		self.control_indexes = [ind if ind >= 0 else n + ind for ind in selected_control_indexes]
 
 		self.canvas = canvas
 		self._create_gate(x, y)
@@ -31,15 +30,9 @@ class ToffoliGateVisual(Frame):
 			max_control_index = max(self.control_indexes)
 
 			if min_control_index < self.target_index:
-				if self.up:
-					ys_vertical[0] = y - 2 * self.c * (self.target_index - min_control_index)
-				else:
-					ys_vertical[1] = y + 2 * self.c * (self.target_index - min_control_index)
+				ys_vertical[0] = y - 2 * self.c * (self.target_index - min_control_index)
 			if max_control_index > self.target_index:
-				if self.up:
-					ys_vertical[1] = y + 2 * self.c * (max_control_index - self.target_index)
-				else:
-					ys_vertical[0] = y - 2 * self.c * (max_control_index - self.target_index)
+				ys_vertical[1] = y + 2 * self.c * (max_control_index - self.target_index)
 		
 		self.vertical_line_id = self.canvas.create_line(
 			(x, ys_vertical[0]), (x, ys_vertical[1]), 
@@ -49,10 +42,7 @@ class ToffoliGateVisual(Frame):
 		self.dots_id = []
 		for i in self.control_indexes:
 			delt = self.target_index - i
-			if self.up:
-				y_dot = y - delt * 2 * self.c
-			else:
-				y_dot = y + delt * 2 * self.c
+			y_dot = y - delt * 2 * self.c
 			self.dots_id.append(
 				self.canvas.create_oval(
 					(x - 3, y_dot - 3), 
