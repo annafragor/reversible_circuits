@@ -4,10 +4,10 @@ from .schema_editor import EditorFrame
 c = 10  # constant for gate size
 
 def _check_number(inp_str, acttyp):
-			if acttyp == '1': #insert
-				if not inp_str.isdigit():
-					return False
-			return True
+	if acttyp == '1': #insert
+		if not inp_str.isdigit():
+			return False
+	return True
 
 
 class mainFrame(Frame):

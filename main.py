@@ -9,25 +9,4 @@ if __name__ == '__main__':
 	root = Tk()
 	mf = mainFrame(root, width=250, height=60)
 	root.mainloop()
-
-	# outputs = [7, 1, 4, 3, 0, 2, 6, 5]
-	# outputs = [1, 0, 3, 2, 5, 7, 4, 6]  # 1
-	# outputs = [7, 0, 1, 2, 3, 4, 5, 6]  # 2s
-	# tr = Transposition(3, outputs=outputs)
-	# tr.input_to_output_transform_algorythm()
-	# print(tr.gates)
-	# tr._calculate_function()
-	# tr.print_truth_table()
-	# print()
-
-	# 7.0.2.1.5.4.3.6
-
-	# gates = [
-	# 	ToffoliGate(n=3, target_line_index=2, control_lines_indexes=[0, 1]),
-	# 	ToffoliGate(n=3, target_line_index=1, control_lines_indexes=[0, 2]),
-	# 	ToffoliGate(n=3, target_line_index=2, control_lines_indexes=[0, 1]),
-	# 	ToffoliGate(n=3, target_line_index=2)
-	# ]
-	# tr2 = Transposition(3, gates=gates)
-	# tr2.print_truth_table()
 	

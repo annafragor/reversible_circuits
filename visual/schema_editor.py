@@ -38,6 +38,9 @@ class EditorFrame:
 		gridframe_add.grid(row=0, column=0)
 		gridframe_left.grid(row=0, column=0)
 		gridframe_right.grid(row=0, column=1)
+
+	def on_horizontal(self, event):
+		self.canvas.xview_scroll(-1 * event.delta, 'units')
 	
 	def _set_up_canvas(self, gridframe, width, height, lines_num):
 		self.canvas = Canvas(gridframe, width=width, height=height, background="white", scrollregion=(0, 0, width * 3, width * 3))
@@ -50,17 +53,23 @@ class EditorFrame:
 		self.canvas.bind("<ButtonRelease-1>", self.mouse_release)
 		self.canvas.bind("<B1-Motion>", self.drag_process)
 		self.canvas.bind("<Button-2>", self.rotate_gate)  # клик колёсиком мыши
+		self.canvas.bind('<Shift-MouseWheel>', self.on_horizontal)
 		self._add_lines(lines_num, width)
 
+	def extended_event(self, event):
+		return (self.canvas.canvasx(event.x), self.canvas.canvasy(event.y))
+
 	def mouse_press(self, event):
+		event = self.extended_event(event)
 		self.set_nearest_gate(event)
 		if self.nearest_gate_index != None:
-			self.current_mouse_position = (event.x, event.y)
+			self.current_mouse_position = event
 
 	def mouse_release(self, event):
+		event = self.extended_event(event)
 		self.set_nearest_gate(event)
 		if self.nearest_gate_index != None:
-			nearest_line = self.get_nearest_line(event)
+			nearest_line = self.get_nearest_line()
 			dots_ys = self.nearest_gate.get_dots_ys()
 			if nearest_line: 
 				if dots_ys:
@@ -94,8 +103,8 @@ class EditorFrame:
 		else:
 			# отрисовываем элемент там, где отжали кнопку, не добавляя на схему
 			self.nearest_gate.reset_coordinates(
-				x_delta=event.x - self.current_mouse_position[0], 
-				y_delta=event.y - self.current_mouse_position[1]
+				x_delta=event[0] - self.current_mouse_position[0], 
+				y_delta=event[1] - self.current_mouse_position[1]
 			)
 			# проверка, не был ли этот элемент удалён с самой схемы
 			if self.nearest_gate.on_schema:
@@ -107,15 +116,16 @@ class EditorFrame:
 		self.nearest_gate_index = None
 
 	def drag_process(self, event):
+		event = self.extended_event(event)
 		if self.nearest_gate_index is not None:
-			x_delta = event.x - self.current_mouse_position[0]
-			y_delta = event.y - self.current_mouse_position[1]
-			self.current_mouse_position = (event.x, event.y)
+			x_delta = event[0] - self.current_mouse_position[0]
+			y_delta = event[1] - self.current_mouse_position[1]
+			self.current_mouse_position = event
 			self.canvas.move(self.nearest_gate.name_tag, x_delta, y_delta)
 			self.nearest_gate.reset_coordinates(x_delta=x_delta, y_delta=y_delta)
 
 	def rotate_gate(self, event):
-		self.set_nearest_gate(event)
+		self.set_nearest_gate(self.extended_event(event))
 		if self.nearest_gate:
 			params = (
 				self.nearest_gate.name_tag,
@@ -138,11 +148,11 @@ class EditorFrame:
 	def set_nearest_gate(self, event):
 		for i in range(len(self.gates)):
 			gate = self.gates[i]
-			if abs(gate.center_point[0] - event.x) <= c and abs(gate.center_point[1] - event.y) <= c:
+			if abs(gate.center_point[0] - event[0]) <= c and abs(gate.center_point[1] - event[1]) <= c:
 				self.nearest_gate_index = i
 				break
 
-	def get_nearest_line(self, event):
+	def get_nearest_line(self):
 		if self.nearest_gate.n_controls >= len(self.lines_ys):
 			return None		
 		for i in range(len(self.lines_ys)):
@@ -187,10 +197,8 @@ class EditorFrame:
 	def draw_schema_from_input(self, straight=False, backward=False, bidirectional=False):
 		input_func_list = [int(inp) for inp in re.findall(r"(\d+)\.{0,1}", self.input_func_int_data.get())]
 		if len(input_func_list) != 2 ** len(self.lines_ys) or len(set(input_func_list)) != 2 ** len(self.lines_ys):
-			print("error")
 			return
 		tr = Transposition(len(self.lines_ys), outputs=input_func_list)
-		tr.print_truth_table()
 		if straight:
 			tr.greedy_transform_algorythm()
 		elif backward:
