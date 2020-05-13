@@ -14,14 +14,14 @@ class mainFrame(Frame):
 	def __init__(self, root, width=600, height=300):
 		Frame.__init__(self, root)
 		self.root = root
-		self.root.title("Главное окно")
+		self.root.title("Main Frame")
 		self.root.geometry('%dx%d' % (width, height))
 		self.root.resizable(False, False)
 
 		self._set_up_buttons()
 
 	def _set_up_buttons(self):
-		label = Label(self.root, text="Число линий на схеме")
+		label = Label(self.root, text="Input variables number")
 		label.grid(row=1, column=0)
 
 		opts = [str(i) for i in range(1,7)]

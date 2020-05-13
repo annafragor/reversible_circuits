@@ -14,8 +14,7 @@ class EditorFrame:
 		self.root = Toplevel(parent_window.root)
 		w, h = parent_size[0], parent_size[1]
 		self.root.geometry("550x400+{}+{}".format(250+w, h)) 
-		self.root.title("Схема")
-		# self.root.resizable(False, False)
+		self.root.title("Scheme")
 
 		self.selected_control_lines_indexes = []
 		self.checkboxes_for_control_lines = []
